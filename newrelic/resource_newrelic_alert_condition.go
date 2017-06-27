@@ -1,13 +1,14 @@
 package newrelic
 
 import (
+	//"database/sql"
 	"fmt"
 	"log"
 	"strconv"
 
+	newrelic "github.com/RubyLi0612/go-newrelic/api"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
-	newrelic "github.com/paultyng/go-newrelic/api"
 )
 
 var alertConditionTypes = map[string][]string{
@@ -77,6 +78,7 @@ func resourceNewRelicAlertCondition() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+
 		Schema: map[string]*schema.Schema{
 			"policy_id": {
 				Type:     schema.TypeInt,
@@ -119,10 +121,6 @@ func resourceNewRelicAlertCondition() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
-			"evaluate_content": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
 			"term": {
 				Type: schema.TypeList,
 				Elem: &schema.Resource{
@@ -153,6 +151,13 @@ func resourceNewRelicAlertCondition() *schema.Resource {
 							Type:         schema.TypeString,
 							Required:     true,
 							ValidateFunc: validation.StringInSlice([]string{"all", "any"}, false),
+						},
+						"evaluation_content": { // the condition under which query is evaluated
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  "query returns a value",
+							ValidateFunc: validation.StringInSlice([]string{"query returns a value",
+								"sum of query result is"}, false),
 						},
 					},
 				},
@@ -192,6 +197,7 @@ func buildAlertConditionStruct(d *schema.ResourceData) *newrelic.AlertCondition 
 			Priority:     termM["priority"].(string),
 			Threshold:    termM["threshold"].(float64),
 			TimeFunction: termM["time_function"].(string),
+			EvalContent:  termM["evaluation_content"].(string),
 		}
 	}
 
@@ -217,6 +223,14 @@ func buildAlertConditionStruct(d *schema.ResourceData) *newrelic.AlertCondition 
 				ValueFunction: attrVF.(string),
 			}
 		}
+	}
+
+	if attr, ok := d.GetOk("query"); ok {
+		condition.Query = attr.(string)
+	}
+
+	if attr, ok := d.GetOk("wait_time"); ok {
+		condition.WaitTime = attr.(int)
 	}
 
 	return &condition
@@ -245,8 +259,11 @@ func readAlertConditionStruct(condition *newrelic.AlertCondition, d *schema.Reso
 	d.Set("metric", condition.Metric)
 	d.Set("runbook_url", condition.RunbookURL)
 	d.Set("condition_scope", condition.Scope)
+	d.Set("query", condition.Query)
+	d.Set("wait_time", condition.WaitTime)
 	d.Set("user_defined_metric", condition.UserDefined.Metric)
 	d.Set("user_defined_value_function", condition.UserDefined.ValueFunction)
+
 	if err := d.Set("entities", entities); err != nil {
 		return fmt.Errorf("[DEBUG] Error setting alert condition entities: %#v", err)
 	}
@@ -255,11 +272,12 @@ func readAlertConditionStruct(condition *newrelic.AlertCondition, d *schema.Reso
 
 	for _, src := range condition.Terms {
 		dst := map[string]interface{}{
-			"duration":      src.Duration,
-			"operator":      src.Operator,
-			"priority":      src.Priority,
-			"threshold":     src.Threshold,
-			"time_function": src.TimeFunction,
+			"duration":           src.Duration,
+			"operator":           src.Operator,
+			"priority":           src.Priority,
+			"threshold":          src.Threshold,
+			"time_function":      src.TimeFunction,
+			"evaluation_content": src.EvalContent,
 		}
 		terms = append(terms, dst)
 	}

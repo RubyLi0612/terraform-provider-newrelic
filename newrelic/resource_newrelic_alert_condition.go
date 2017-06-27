@@ -60,6 +60,7 @@ var alertConditionTypes = map[string][]string{
 		"memory_percentage",
 		"user_defined",
 	},
+	"nrql_query": []string{},
 }
 
 func resourceNewRelicAlertCondition() *schema.Resource {
@@ -94,12 +95,12 @@ func resourceNewRelicAlertCondition() *schema.Resource {
 			"entities": {
 				Type:     schema.TypeList,
 				Elem:     &schema.Schema{Type: schema.TypeInt},
-				Required: true,
+				Required: true, // change this to optional for nrql or not?
 				MinItems: 1,
 			},
 			"metric": {
 				Type:     schema.TypeString,
-				Required: true,
+				Required: true, // change this to optional for nrql or not?
 				//TODO: ValidateFunc from map
 			},
 			"runbook_url": {
@@ -107,6 +108,18 @@ func resourceNewRelicAlertCondition() *schema.Resource {
 				Optional: true,
 			},
 			"condition_scope": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"query": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"wait_time": { // wait time before evaluation, unit is minutes
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"evaluate_content": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},

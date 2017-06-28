@@ -11,6 +11,8 @@ import (
 	"os"
 )
 
+var isNRQL bool = false
+
 var alertConditionTypes = map[string][]string{
 	"apm_app_metric": []string{
 		"apdex",
@@ -120,7 +122,7 @@ func resourceNewRelicAlertCondition() *schema.Resource {
 						"duration": {
 							Type:         schema.TypeInt,
 							Required:     true,
-							ValidateFunc: intInSlice([]int{5, 10, 15, 30, 60, 120}),
+							ValidateFunc: intInSliceDuration(),
 						},
 						"operator": {
 							Type:         schema.TypeString,
@@ -187,7 +189,19 @@ func resourceNewRelicAlertCondition() *schema.Resource {
 	}
 }
 
+func intInSliceDuration() schema.SchemaValidateFunc {
+	if isNRQL {
+		return intInSlice([]int{1, 2, 3, 4, 5, 10, 15, 30, 60, 120})
+	} else {
+		return intInSlice([]int{5, 10, 15, 30, 60, 120})
+	}
+}
+
 func buildAlertConditionStruct(d *schema.ResourceData) *newrelic.AlertCondition {
+
+	if _, ok := d.GetOk("nrql"); ok {
+		isNRQL = true
+	}
 
 	termSet := d.Get("term").([]interface{})
 	terms := make([]newrelic.AlertConditionTerm, len(termSet))

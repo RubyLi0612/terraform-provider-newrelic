@@ -161,13 +161,14 @@ func resourceNewRelicAlertCondition() *schema.Resource {
 				Type: schema.TypeList,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"query": {
+						"query": { // NRQL query that New Relic Alerts monitors as part of a NRQL condition
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"since_value": {
-							Type:     schema.TypeInt,
-							Required: true,
+						"since_value": { // timeframe (in minutes) in which to evaluate the specified NRQL query
+							Type:         schema.TypeInt,
+							Required:     true,
+							ValidateFunc: intInSlice([]int{1, 2, 3, 4, 5}),
 						},
 					},
 				},

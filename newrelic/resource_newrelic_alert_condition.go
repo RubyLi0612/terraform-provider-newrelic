@@ -11,7 +11,7 @@ import (
 	"os"
 )
 
-var isNRQL bool = false
+var isNRQL bool = false // marks if the condition is NRQL query
 
 var alertConditionTypes = map[string][]string{
 	"apm_app_metric": []string{
@@ -189,6 +189,7 @@ func resourceNewRelicAlertCondition() *schema.Resource {
 	}
 }
 
+// support different ValidateFunc for NRQL and other conditions
 func intInSliceDuration() schema.SchemaValidateFunc {
 	if isNRQL {
 		return intInSlice([]int{1, 2, 3, 4, 5, 10, 15, 30, 60, 120})

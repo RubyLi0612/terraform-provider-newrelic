@@ -93,7 +93,7 @@ func resourceNewRelicAlertCondition() *schema.Resource {
 			},
 			"type": {
 				Type:         schema.TypeString,
-				Required:     true,
+				Optional:     true, // change this to optional for NRQL
 				ValidateFunc: validation.StringInSlice(validAlertConditionTypes, false),
 			},
 			"entities": {
@@ -220,7 +220,7 @@ func buildAlertConditionStruct(d *schema.ResourceData) *newrelic.AlertCondition 
 	}
 
 	condition := newrelic.AlertCondition{
-		Type:    d.Get("type").(string),
+		//Type:    d.Get("type").(string),
 		Name:    d.Get("name").(string),
 		Enabled: true,
 		//Entities: entities,
@@ -231,6 +231,10 @@ func buildAlertConditionStruct(d *schema.ResourceData) *newrelic.AlertCondition 
 	}
 
 	if attrN, ok := d.GetOk("nrql"); ok {
+		if _, ok := d.GetOk("type"); ok { // check that no type is set for NRQL
+			fmt.Printf("No type entry for NRQL query")
+			os.Exit(1)
+		}
 		if _, ok := d.GetOk("entities"); ok { // check that no entities is set for NRQL
 			fmt.Printf("No entities for NRQL query")
 			os.Exit(1)
@@ -267,6 +271,12 @@ func buildAlertConditionStruct(d *schema.ResourceData) *newrelic.AlertCondition 
 			condition.Entities = entities
 		} else { // check for entities
 			fmt.Printf("Must set entities for metric-type conditions")
+			os.Exit(1)
+		}
+		if _, ok := d.GetOk("type"); ok { // check for type
+			condition.Type = d.Get("type").(string)
+		} else {
+			fmt.Printf("Must set type for metric-type conditions")
 			os.Exit(1)
 		}
 	}

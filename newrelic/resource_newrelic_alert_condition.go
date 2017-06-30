@@ -63,7 +63,6 @@ var alertConditionTypes = map[string][]string{
 		"memory_percentage",
 		"user_defined",
 	},
-	"nrql_query": []string{}, // no metric options for NRQL
 }
 
 func resourceNewRelicAlertCondition() *schema.Resource {

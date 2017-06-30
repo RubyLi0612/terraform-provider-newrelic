@@ -193,5 +193,3 @@ resource "newrelic_alert_condition" "foo" {
 }
 
 // TODO: const testAccCheckNewRelicAlertConditionConfigMulti = `
-
-

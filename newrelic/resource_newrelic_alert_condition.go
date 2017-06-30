@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/terraform/helper/validation"
 )
 
-
 var alertConditionTypes = map[string][]string{
 	"apm_app_metric": []string{
 		"apdex",
@@ -90,7 +89,7 @@ func resourceNewRelicAlertCondition() *schema.Resource {
 			},
 			"type": {
 				Type:         schema.TypeString,
-				Required: true,
+				Required:     true,
 				ValidateFunc: validation.StringInSlice(validAlertConditionTypes, false),
 			},
 			"entities": {
@@ -161,10 +160,9 @@ func resourceNewRelicAlertCondition() *schema.Resource {
 	}
 }
 
-
 func buildAlertConditionStruct(d *schema.ResourceData) *newrelic.AlertCondition {
 	entitySet := d.Get("entities").([]interface{})
-	   entities := make([]string, len(entitySet))
+	entities := make([]string, len(entitySet))
 
 	for i, entity := range entitySet {
 		entities[i] = strconv.Itoa(entity.(int))
@@ -186,9 +184,9 @@ func buildAlertConditionStruct(d *schema.ResourceData) *newrelic.AlertCondition 
 	}
 
 	condition := newrelic.AlertCondition{
-		Type:    d.Get("type").(string),
-		Name:    d.Get("name").(string),
-		Enabled: true,
+		Type:     d.Get("type").(string),
+		Name:     d.Get("name").(string),
+		Enabled:  true,
 		Entities: entities,
 		Metric:   d.Get("metric").(string),
 		Terms:    terms,

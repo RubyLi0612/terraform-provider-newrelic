@@ -345,14 +345,9 @@ func readAlertConditionStruct(condition *newrelic.AlertCondition, d *schema.Reso
 		return fmt.Errorf("[DEBUG] Error setting alert condition terms: %#v", err)
 	}
 
-	var nrql []map[string]interface{}
-
-	for _, src := range condition.NRQL {
-		dst := map[string]interface{}{
-			"query":       src.Query,
-			"since_value": src.SinceValue,
-		}
-		nrql = append(nrql, dst)
+	nrql := map[string]interface{}{
+		"query":       condition.NRQL.Query,
+		"since_value": condition.NRQL.SinceValue,
 	}
 
 	if err := d.Set("nrql", nrql); err != nil {

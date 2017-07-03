@@ -63,6 +63,10 @@ var alertConditionTypes = map[string][]string{
 		"memory_percentage",
 		"user_defined",
 	},
+	"nrql_query": []string{
+		"query",
+		"since_value",
+	},
 }
 
 func resourceNewRelicAlertCondition() *schema.Resource {
@@ -92,7 +96,7 @@ func resourceNewRelicAlertCondition() *schema.Resource {
 			},
 			"type": {
 				Type:         schema.TypeString,
-				Optional:     true, // change this to optional for NRQL
+				Required:     true,
 				ValidateFunc: validation.StringInSlice(validAlertConditionTypes, false),
 			},
 			"entities": {
@@ -155,24 +159,23 @@ func resourceNewRelicAlertCondition() *schema.Resource {
 			"value_function": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      "single_value",
 				ValidateFunc: validation.StringInSlice([]string{"single_value", "sum"}, false),
 			},
 			"nrql": {
-				Type: schema.TypeList,
-				Elem: &schema.Resource{
+				Type: schema.TypeMap,
+				/*Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"query": { // NRQL query that New Relic Alerts monitors as part of a NRQL condition
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
 						},
 						"since_value": { // timeframe (in minutes) in which to evaluate the specified NRQL query
 							Type:         schema.TypeInt,
-							Required:     true,
+							Optional:     true,
 							ValidateFunc: intInSlice([]int{1, 2, 3, 4, 5}),
 						},
 					},
-				},
+				},*/
 				Optional: true,
 			},
 			"user_defined_metric": {
@@ -219,7 +222,7 @@ func buildAlertConditionStruct(d *schema.ResourceData) *newrelic.AlertCondition 
 	}
 
 	condition := newrelic.AlertCondition{
-		//Type:    d.Get("type").(string),
+		Type:    d.Get("type").(string),
 		Name:    d.Get("name").(string),
 		Enabled: true,
 		//Entities: entities,
@@ -230,10 +233,6 @@ func buildAlertConditionStruct(d *schema.ResourceData) *newrelic.AlertCondition 
 	}
 
 	if attrN, ok := d.GetOk("nrql"); ok {
-		if _, ok := d.GetOk("type"); ok { // check that no type is set for NRQL
-			fmt.Printf("No type entry for NRQL query")
-			os.Exit(1)
-		}
 		if _, ok := d.GetOk("entities"); ok { // check that no entities is set for NRQL
 			fmt.Printf("No entities for NRQL query")
 			os.Exit(1)
@@ -242,17 +241,7 @@ func buildAlertConditionStruct(d *schema.ResourceData) *newrelic.AlertCondition 
 			fmt.Printf("No metric for NRQL query")
 			os.Exit(1)
 		}
-		nrqlSet := attrN.([]interface{})
-		prop := make([]newrelic.AlertConditionNRQL, len(nrqlSet))
-
-		for i, propI := range nrqlSet {
-			propM := propI.(map[string]interface{})
-
-			prop[i] = newrelic.AlertConditionNRQL{
-				Query:      propM["query"].(string),
-				SinceValue: propM["since_value"].(int),
-			}
-		}
+		condition.NRQL = attrN.(map[string]interface{})
 	} else {
 		if attrM, ok := d.GetOk("metric"); ok {
 			condition.Metric = attrM.(string)
@@ -270,12 +259,6 @@ func buildAlertConditionStruct(d *schema.ResourceData) *newrelic.AlertCondition 
 			condition.Entities = entities
 		} else { // check for entities
 			fmt.Printf("Must set entities for metric-type conditions")
-			os.Exit(1)
-		}
-		if _, ok := d.GetOk("type"); ok { // check for type
-			condition.Type = d.Get("type").(string)
-		} else {
-			fmt.Printf("Must set type for metric-type conditions")
 			os.Exit(1)
 		}
 	}
@@ -344,13 +327,8 @@ func readAlertConditionStruct(condition *newrelic.AlertCondition, d *schema.Reso
 		return fmt.Errorf("[DEBUG] Error setting alert condition terms: %#v", err)
 	}
 
-	nrql := map[string]interface{}{
-		"query":       condition.NRQL.Query,
-		"since_value": condition.NRQL.SinceValue,
-	}
-
-	if err := d.Set("nrql", nrql); err != nil {
-		return fmt.Errorf("[DEBUG] Error setting alert condition nrql: %#v", err)
+	if err := d.Set("nrql", condition.NRQL); err != nil {
+		return fmt.Errorf("[DEBUG] Error setting Alert NRQL: %#v", err)
 	}
 
 	return nil

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"testing"
 
+	newrelic "github.com/RubyLi0612/go-newrelic/api"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	newrelic "github.com/paultyng/go-newrelic/api"
 )
 
 func TestAccNewRelicAlertPolicyChannel_Basic(t *testing.T) {

@@ -5,9 +5,9 @@ import (
 	"log"
 	"strconv"
 
+	newrelic "github.com/RubyLi0612/go-newrelic/api"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
-	newrelic "github.com/paultyng/go-newrelic/api"
 )
 
 var alertChannelTypes = map[string][]string{

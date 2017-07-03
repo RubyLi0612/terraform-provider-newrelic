@@ -5,8 +5,8 @@ import (
 	"log"
 	"strconv"
 
+	newrelic "github.com/RubyLi0612/go-newrelic/api"
 	"github.com/hashicorp/terraform/helper/schema"
-	newrelic "github.com/paultyng/go-newrelic/api"
 )
 
 func dataSourceNewRelicApplication() *schema.Resource {

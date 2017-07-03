@@ -3,8 +3,8 @@ package newrelic
 import (
 	"log"
 
+	newrelic "github.com/RubyLi0612/go-newrelic/api"
 	"github.com/hashicorp/terraform/helper/schema"
-	newrelic "github.com/paultyng/go-newrelic/api"
 )
 
 func policyChannelExists(client *newrelic.Client, policyID int, channelID int) (bool, error) {

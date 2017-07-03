@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"testing"
 
+	newrelic "github.com/RubyLi0612/go-newrelic/api"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	newrelic "github.com/paultyng/go-newrelic/api"
 )
 
 func TestAccNewRelicAlertCondition_Basic(t *testing.T) {
@@ -70,9 +70,11 @@ func TestAccNewRelicAlertCondition_Basic(t *testing.T) {
 			resource.TestStep{
 				Config: testAccCheckNewRelicAlertNRQLConditionConfig(rName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckNewRelicAlertConditionExists("newrelic_alert_nrql_condition.foo"),
+					testAccCheckNewRelicAlertConditionExists("newrelic_alert_condition.foo"),
 					resource.TestCheckResourceAttr(
-						"newrelic_alert_condition.foo", "name", fmt.Sprintf("tf-test-%s", rName)),
+						"newrelic_alert_condition.foo", "name", fmt.Sprintf("tf-test-nrql-%s", rName)),
+					resource.TestCheckResourceAttr(
+						"newrelic_alert_condition.foo", "type", "nrql_query"),
 					resource.TestCheckResourceAttr(
 						"newrelic_alert_condition.foo", "runbook_url", "https://foo.example.com"),
 					resource.TestCheckResourceAttr(
@@ -98,9 +100,11 @@ func TestAccNewRelicAlertCondition_Basic(t *testing.T) {
 			resource.TestStep{
 				Config: testAccCheckNewRelicAlertNRQLConditionConfigUpdate(rName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckNewRelicAlertConditionExists("newrelic_alert_nrql_condition.foo"),
+					testAccCheckNewRelicAlertConditionExists("newrelic_alert_condition.foo"),
 					resource.TestCheckResourceAttr(
-						"newrelic_alert_condition.foo", "name", fmt.Sprintf("tf-test-update-%s", rName)),
+						"newrelic_alert_condition.foo", "name", fmt.Sprintf("tf-test-nrql-update-%s", rName)),
+					resource.TestCheckResourceAttr(
+						"newrelic_alert_condition.foo", "type", "nrql_query"),
 					resource.TestCheckResourceAttr(
 						"newrelic_alert_condition.foo", "runbook_url", "https://bar.example.com"),
 					resource.TestCheckResourceAttr(
@@ -254,12 +258,13 @@ resource "newrelic_alert_condition" "foo" {
 func testAccCheckNewRelicAlertNRQLConditionConfig(rName string) string {
 	return fmt.Sprintf(`
 resource "newrelic_alert_policy" "foo" {
-  name = "tf-test-updated-%[1]s"
+  name = "tf-test-nrql-%[1]s"
 }
 
 resource "newrelic_alert_condition" "foo" {
   policy_id = "${newrelic_alert_policy.foo.id}"
-  name            = "tf-test-%[1]s"
+  name            = "tf-test-nrql-%[1]s"
+  type            = "nrql_query"
   runbook_url     = "https://foo.example.com"
 
   term {
@@ -270,12 +275,13 @@ resource "newrelic_alert_condition" "foo" {
     time_function = "all"
   }
 
-  nrql {
+  nrql = {
     query = "SELECT count(*) from SyntheticCheck where monitorName = 'foo' and result != 'SUCCESS'"
     since_value = 3
   }
 
   value_function = "single_value"
+
 }
 `, rName)
 }
@@ -283,12 +289,13 @@ resource "newrelic_alert_condition" "foo" {
 func testAccCheckNewRelicAlertNRQLConditionConfigUpdate(rName string) string {
 	return fmt.Sprintf(`
 resource "newrelic_alert_policy" "foo" {
-  name = "tf-test-updated-%[1]s"
+  name = "tf-test-nrql-updated-%[1]s"
 }
 
 resource "newrelic_alert_condition" "foo" {
   policy_id = "${newrelic_alert_policy.foo.id}"
-  name            = "tf-test-updated-%[1]s"
+  name            = "tf-test-nrql-updated-%[1]s"
+  type            = "nrql_query"
   runbook_url     = "https://bar.example.com"
 
   term {
@@ -298,8 +305,7 @@ resource "newrelic_alert_condition" "foo" {
     threshold     = "0.65"
     time_function = "all"
   }
-
-  nrql {
+  nrql = {
     query = "SELECT count(*) from SyntheticCheck where monitorName = 'bar' and result != 'SUCCESS'"
     since_value = 5
   }

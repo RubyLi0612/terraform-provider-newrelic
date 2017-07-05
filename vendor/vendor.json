@@ -579,7 +579,7 @@
 		},
 		{
 			"checksumSHA1": "SUK6xOTZDwljlX/AoHAmgoz0e1E=",
-			"path": "github.com/paultyng/go-newrelic/api",
+			"path": "github.com/RubyLi0612/go-newrelic/api",
 			"revision": "5fbf16b273dd4b544c9588450c58711d9f46f912",
 			"revisionTime": "2017-03-27T18:23:21Z"
 		},

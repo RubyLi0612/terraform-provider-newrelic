@@ -176,6 +176,7 @@ func resourceNewRelicAlertCondition() *schema.Resource {
 						},
 					},
 				},*/
+				//TODO: ValidateFunc: (use list of keys from map above)
 				Optional: true,
 			},
 			"user_defined_metric": {

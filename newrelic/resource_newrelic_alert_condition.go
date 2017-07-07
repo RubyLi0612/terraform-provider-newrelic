@@ -11,8 +11,6 @@ import (
 	"os"
 )
 
-var isNRQL bool = false // marks if the condition is NRQL query
-
 var alertConditionTypes = map[string][]string{
 	"apm_app_metric": []string{
 		"apdex",
@@ -125,7 +123,7 @@ func resourceNewRelicAlertCondition() *schema.Resource {
 						"duration": {
 							Type:         schema.TypeInt,
 							Required:     true,
-							ValidateFunc: intInSliceDuration(),
+							ValidateFunc: intInSlice([]int{1, 2, 3, 4, 5, 10, 15, 30, 60, 120}),
 						},
 						"operator": {
 							Type:         schema.TypeString,
@@ -163,20 +161,7 @@ func resourceNewRelicAlertCondition() *schema.Resource {
 			},
 			"nrql": {
 				Type: schema.TypeMap,
-				/*Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"query": { // NRQL query that New Relic Alerts monitors as part of a NRQL condition
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"since_value": { // timeframe (in minutes) in which to evaluate the specified NRQL query
-							Type:         schema.TypeInt,
-							Optional:     true,
-							ValidateFunc: intInSlice([]int{1, 2, 3, 4, 5}),
-						},
-					},
-				},*/
-				//TODO: ValidateFunc: (use list of keys from map above)
+				//TODO: ValidateFunc: (use list of keys from map above) "since_value" should be one of [1, 2, 3, 4, 5]
 				Optional: true,
 			},
 			"user_defined_metric": {
@@ -192,20 +177,7 @@ func resourceNewRelicAlertCondition() *schema.Resource {
 	}
 }
 
-// support different ValidateFunc for NRQL and other conditions
-func intInSliceDuration() schema.SchemaValidateFunc {
-	if isNRQL {
-		return intInSlice([]int{1, 2, 3, 4, 5, 10, 15, 30, 60, 120})
-	} else {
-		return intInSlice([]int{5, 10, 15, 30, 60, 120})
-	}
-}
-
 func buildAlertConditionStruct(d *schema.ResourceData) *newrelic.AlertCondition {
-
-	if _, ok := d.GetOk("nrql"); ok {
-		isNRQL = true
-	}
 
 	termSet := d.Get("term").([]interface{})
 	terms := make([]newrelic.AlertConditionTerm, len(termSet))
@@ -261,6 +233,15 @@ func buildAlertConditionStruct(d *schema.ResourceData) *newrelic.AlertCondition 
 		} else { // check for entities
 			fmt.Printf("Must set entities for metric-type conditions")
 			os.Exit(1)
+		}
+		termSet := d.Get("term").([]interface{})
+
+		for _, termI := range termSet {
+			termM := termI.(map[string]interface{})
+			if termM["duration"].(int) < 5 { // check for duration value
+				fmt.Printf("Require duration to be one of [5, 10, 15, 30, 60, 120] for metric-type conditions")
+				os.Exit(1)
+			}
 		}
 	}
 

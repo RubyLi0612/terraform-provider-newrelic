@@ -67,7 +67,7 @@ func TestAccNewRelicAlertCondition_Basic(t *testing.T) {
 						"newrelic_alert_condition.foo", "term.0.time_function", "all"),
 				),
 			},
-			/*resource.TestStep{
+			resource.TestStep{
 				Config: testAccCheckNewRelicAlertNrqlConditionConfig(rName),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckNewRelicAlertConditionExists("newrelic_alert_condition.foo"),
@@ -124,7 +124,7 @@ func TestAccNewRelicAlertCondition_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"newrelic_alert_condition.foo", "value_function", "sum"),
 				),
-			},*/
+			},
 		},
 	})
 }

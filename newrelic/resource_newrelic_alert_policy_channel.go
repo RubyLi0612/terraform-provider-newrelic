@@ -1,139 +1,137 @@
 package newrelic
 
 import (
-	"fmt"
-	"testing"
+	"log"
 
-	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform/helper/schema"
 	newrelic "github.com/paultyng/go-newrelic/api"
 )
 
-func TestAccNewRelicAlertPolicyChannel_Basic(t *testing.T) {
-	rName := acctest.RandString(5)
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckNewRelicAlertPolicyChannelDestroy,
-		Steps: []resource.TestStep{
-			resource.TestStep{
-				Config: testAccCheckNewRelicAlertPolicyChannelConfig(rName),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckNewRelicAlertPolicyChannelExists("newrelic_alert_policy_channel.foo"),
-				),
-			},
-			resource.TestStep{
-				Config: testAccCheckNewRelicAlertPolicyChannelConfigUpdated(rName),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckNewRelicAlertPolicyChannelExists("newrelic_alert_policy_channel.foo"),
-				),
-			},
-		},
-	})
-}
-
-func testAccCheckNewRelicAlertPolicyChannelDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*newrelic.Client)
-	for _, r := range s.RootModule().Resources {
-		if r.Type != "newrelic_alert_policy_channel" {
-			continue
+func policyChannelExists(client *newrelic.Client, policyID int, channelID int) (bool, error) {
+	channel, err := client.GetAlertChannel(channelID)
+	if err != nil {
+		if err == newrelic.ErrNotFound {
+			return false, nil
 		}
 
-		ids, err := parseIDs(r.Primary.ID, 2)
-		if err != nil {
-			return err
-		}
+		return false, err
+	}
 
-		policyID := ids[0]
-		channelID := ids[1]
-
-		exists, err := policyChannelExists(client, policyID, channelID)
-		if err != nil {
-			return err
-		}
-
-		if exists {
-			return fmt.Errorf("Resource still exists")
+	for _, id := range channel.Links.PolicyIDs {
+		if id == policyID {
+			return true, nil
 		}
 	}
+
+	return false, nil
+}
+
+func resourceNewRelicAlertPolicyChannel() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceNewRelicAlertPolicyChannelCreate,
+		Read:   resourceNewRelicAlertPolicyChannelRead,
+		// Update: Not currently supported in API
+		Delete: resourceNewRelicAlertPolicyChannelDelete,
+		Schema: map[string]*schema.Schema{
+			"policy_id": {
+				Type:     schema.TypeInt,
+				Required: true,
+				ForceNew: true,
+			},
+			"channel_id": {
+				Type:     schema.TypeInt,
+				Required: true,
+				ForceNew: true,
+			},
+		},
+	}
+}
+
+func resourceNewRelicAlertPolicyChannelCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*newrelic.Client)
+
+	policyID := d.Get("policy_id").(int)
+	channelID := d.Get("channel_id").(int)
+
+	serializedID := serializeIDs([]int{policyID, channelID})
+
+	log.Printf("[INFO] Creating New Relic alert policy channel %s", serializedID)
+
+	exists, err := policyChannelExists(client, policyID, channelID)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		err = client.UpdateAlertPolicyChannels(policyID, []int{channelID})
+		if err != nil {
+			return err
+		}
+	}
+
+	d.SetId(serializedID)
+
 	return nil
 }
 
-func testAccCheckNewRelicAlertPolicyChannelExists(n string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("Not found: %s", n)
-		}
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No resource ID is set")
-		}
+func resourceNewRelicAlertPolicyChannelRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*newrelic.Client)
 
-		client := testAccProvider.Meta().(*newrelic.Client)
+	ids, err := parseIDs(d.Id(), 2)
+	if err != nil {
+		return err
+	}
 
-		ids, err := parseIDs(rs.Primary.ID, 2)
-		if err != nil {
-			return err
-		}
+	policyID := ids[0]
+	channelID := ids[1]
 
-		policyID := ids[0]
-		channelID := ids[1]
+	log.Printf("[INFO] Reading New Relic alert policy channel %s", d.Id())
 
-		exists, err := policyChannelExists(client, policyID, channelID)
-		if err != nil {
-			return err
-		}
-		if !exists {
-			return fmt.Errorf("Resource not found: %v", rs.Primary.ID)
-		}
+	exists, err := policyChannelExists(client, policyID, channelID)
+	if err != nil {
+		return err
+	}
 
+	if !exists {
+		d.SetId("")
 		return nil
 	}
+
+	d.Set("policy_id", policyID)
+	d.Set("channel_id", channelID)
+
+	return nil
 }
 
-func testAccCheckNewRelicAlertPolicyChannelConfig(rName string) string {
-	return fmt.Sprintf(`
-resource "newrelic_alert_policy" "foo" {
-  name = "tf-test-%[1]s"
-}
+func resourceNewRelicAlertPolicyChannelDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*newrelic.Client)
 
-resource "newrelic_alert_channel" "foo" {
-  name = "tf-test-%[1]s"
-	type = "email"
-
-	configuration = {
-		recipients = "foo@example.com"
-		include_json_attachment = "1"
+	ids, err := parseIDs(d.Id(), 2)
+	if err != nil {
+		return err
 	}
-}
 
-resource "newrelic_alert_policy_channel" "foo" {
-  policy_id  = "${newrelic_alert_policy.foo.id}"
-  channel_id = "${newrelic_alert_channel.foo.id}"
-}
-`, rName)
-}
+	policyID := ids[0]
+	channelID := ids[1]
 
-func testAccCheckNewRelicAlertPolicyChannelConfigUpdated(rName string) string {
-	return fmt.Sprintf(`
-resource "newrelic_alert_policy" "bar" {
-  name = "tf-test-updated-%[1]s"
-}
+	log.Printf("[INFO] Deleting New Relic alert policy channel %s", d.Id())
 
-resource "newrelic_alert_channel" "foo" {
-  name = "tf-test-updated-%[1]s"
-	type = "email"
-
-	configuration = {
-		recipients = "bar@example.com"
-		include_json_attachment = "0"
+	exists, err := policyChannelExists(client, policyID, channelID)
+	if err != nil {
+		return err
 	}
-}
 
-resource "newrelic_alert_policy_channel" "foo" {
-  policy_id  = "${newrelic_alert_policy.bar.id}"
-  channel_id = "${newrelic_alert_channel.foo.id}"
-}
-`, rName)
+	if exists {
+		if err := client.DeleteAlertPolicyChannel(policyID, channelID); err != nil {
+			switch err {
+			case newrelic.ErrNotFound:
+				return nil
+			}
+			return err
+		}
+	}
+
+	d.SetId("")
+
+	return nil
 }

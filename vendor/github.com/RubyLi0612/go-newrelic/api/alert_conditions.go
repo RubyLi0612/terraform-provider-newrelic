@@ -7,7 +7,6 @@ import (
 )
 
 func (c *Client) queryAlertConditions(policyID int) ([]AlertCondition, error) {
-	fmt.Printf("%d: ", policyID)
 	conditions := []AlertCondition{}
 
 	reqURL, err := url.Parse("/alerts_conditions.json")
@@ -33,7 +32,6 @@ func (c *Client) queryAlertConditions(policyID int) ([]AlertCondition, error) {
 		}
 
 		for _, c := range resp.Conditions {
-			fmt.Printf("%d, ", c.ID)
 			c.PolicyID = policyID
 		}
 
@@ -45,14 +43,12 @@ func (c *Client) queryAlertConditions(policyID int) ([]AlertCondition, error) {
 
 // GetAlertCondition gets information about an alert condition given an ID and policy ID.
 func (c *Client) GetAlertCondition(policyID int, id int) (*AlertCondition, error) {
-	//fmt.Printf("%d: ", policyID)
 	conditions, err := c.queryAlertConditions(policyID)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, condition := range conditions {
-		//fmt.Printf("%d, ", condition.ID)
 		if condition.ID == id {
 			return &condition, nil
 		}

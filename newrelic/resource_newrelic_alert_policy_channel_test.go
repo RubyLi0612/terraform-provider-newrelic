@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	newrelic "github.com/paultyng/go-newrelic/api"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	newrelic "github.com/paultyng/go-newrelic/api"
 )
 
 func TestAccNewRelicAlertPolicyChannel_Basic(t *testing.T) {
@@ -101,7 +101,7 @@ resource "newrelic_alert_policy" "foo" {
 resource "newrelic_alert_channel" "foo" {
   name = "tf-test-%[1]s"
 	type = "email"
-	
+
 	configuration = {
 		recipients = "foo@example.com"
 		include_json_attachment = "1"
@@ -124,7 +124,7 @@ resource "newrelic_alert_policy" "bar" {
 resource "newrelic_alert_channel" "foo" {
   name = "tf-test-updated-%[1]s"
 	type = "email"
-	
+
 	configuration = {
 		recipients = "bar@example.com"
 		include_json_attachment = "0"

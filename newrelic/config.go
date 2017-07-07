@@ -3,8 +3,8 @@ package newrelic
 import (
 	"log"
 
-	newrelic "github.com/paultyng/go-newrelic/api"
 	"github.com/hashicorp/terraform/helper/logging"
+	newrelic "github.com/paultyng/go-newrelic/api"
 )
 
 // Config contains New Relic provider settings

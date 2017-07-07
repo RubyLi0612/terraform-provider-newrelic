@@ -60,8 +60,6 @@ type AlertCondition struct {
 	Terms       []AlertConditionTerm      `json:"terms,omitempty"`
 	UserDefined AlertConditionUserDefined `json:"user_defined,omitempty"`
 	Scope       string                    `json:"condition_scope,omitempty"`
-	ValueFunction string                    `json:"value_function,omitempty"`
-	NRQL          map[string]interface{}    `json:"nrql,omitempty"`
 }
 
 // AlertChannelLinks represent the links between policies and alert channels

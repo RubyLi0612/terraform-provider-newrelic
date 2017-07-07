@@ -5,10 +5,10 @@ import (
 	"strconv"
 	"testing"
 
-	newrelic "github.com/paultyng/go-newrelic/api"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	newrelic "github.com/paultyng/go-newrelic/api"
 )
 
 func TestAccNewRelicAlertChannel_Basic(t *testing.T) {
@@ -107,7 +107,7 @@ func testAccCheckNewRelicAlertChannelConfig(rName string) string {
 resource "newrelic_alert_channel" "foo" {
   name = "tf-test-%s"
 	type = "email"
-	
+
 	configuration = {
 		recipients = "foo@example.com"
 		include_json_attachment = "1"
@@ -121,7 +121,7 @@ func testAccCheckNewRelicAlertChannelConfigUpdated(rName string) string {
 resource "newrelic_alert_channel" "foo" {
   name = "tf-test-updated-%s"
 	type = "email"
-	
+
 	configuration = {
 		recipients = "bar@example.com"
 		include_json_attachment = "0"

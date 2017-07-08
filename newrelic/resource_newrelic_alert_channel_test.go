@@ -107,7 +107,7 @@ func testAccCheckNewRelicAlertChannelConfig(rName string) string {
 resource "newrelic_alert_channel" "foo" {
   name = "tf-test-%s"
 	type = "email"
-        
+       
 	configuration = {
 		recipients = "foo@example.com"
 		include_json_attachment = "1"

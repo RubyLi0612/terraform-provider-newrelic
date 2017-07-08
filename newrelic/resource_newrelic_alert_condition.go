@@ -5,9 +5,9 @@ import (
 	"log"
 	"strconv"
 
-	newrelic "github.com/paultyng/go-newrelic/api"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
+	newrelic "github.com/paultyng/go-newrelic/api"
 	"os"
 )
 

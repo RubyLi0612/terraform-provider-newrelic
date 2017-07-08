@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	newrelic "github.com/paultyng/go-newrelic/api"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	newrelic "github.com/paultyng/go-newrelic/api"
 )
 
 func TestAccNewRelicAlertCondition_Basic(t *testing.T) {

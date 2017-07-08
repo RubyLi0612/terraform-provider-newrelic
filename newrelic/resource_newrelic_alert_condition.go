@@ -5,10 +5,9 @@ import (
 	"log"
 	"strconv"
 
+	newrelic "github.com/paultyng/go-newrelic/api"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
-	newrelic "github.com/paultyng/go-newrelic/api"
-	"os"
 )
 
 var alertConditionTypes = map[string][]string{
@@ -177,7 +176,7 @@ func resourceNewRelicAlertCondition() *schema.Resource {
 	}
 }
 
-func buildAlertConditionStruct(d *schema.ResourceData) *newrelic.AlertCondition {
+func buildAlertConditionStruct(d *schema.ResourceData) (*newrelic.AlertCondition, error) {
 
 	termSet := d.Get("term").([]interface{})
 	terms := make([]newrelic.AlertConditionTerm, len(termSet))
@@ -207,20 +206,17 @@ func buildAlertConditionStruct(d *schema.ResourceData) *newrelic.AlertCondition 
 
 	if attrN, ok := d.GetOk("nrql"); ok {
 		if _, ok := d.GetOk("entities"); ok { // check that no entities is set for NRQL
-			fmt.Printf("No entities for NRQL query")
-			os.Exit(1)
+			return nil, fmt.Errorf("No entities for NRQL query")
 		}
 		if _, ok := d.GetOk("metric"); ok { // check that no metric is set for NRQL
-			fmt.Printf("No metric for NRQL query")
-			os.Exit(1)
+			return nil, fmt.Errorf("No metric for NRQL query")
 		}
 		condition.NRQL = attrN.(map[string]interface{})
 	} else {
 		if attrM, ok := d.GetOk("metric"); ok {
 			condition.Metric = attrM.(string)
 		} else { // check for metric
-			fmt.Printf("Must set matric value for metric-type conditions")
-			os.Exit(1)
+			return nil, fmt.Errorf("Must set matric value for metric-type conditions")
 		}
 		if attrE, ok := d.GetOk("entities"); ok {
 			entitySet := attrE.([]interface{})
@@ -231,16 +227,14 @@ func buildAlertConditionStruct(d *schema.ResourceData) *newrelic.AlertCondition 
 			}
 			condition.Entities = entities
 		} else { // check for entities
-			fmt.Printf("Must set entities for metric-type conditions")
-			os.Exit(1)
+			return nil, fmt.Errorf("Must set entities for metric-type conditions")
 		}
 		termSet := d.Get("term").([]interface{})
 
 		for _, termI := range termSet {
 			termM := termI.(map[string]interface{})
 			if termM["duration"].(int) < 5 { // check for duration value
-				fmt.Printf("Require duration to be one of [5, 10, 15, 30, 60, 120] for metric-type conditions")
-				os.Exit(1)
+				return nil, fmt.Errorf("Require duration to be one of [5, 10, 15, 30, 60, 120] for metric-type conditions")
 			}
 		}
 	}
@@ -258,7 +252,7 @@ func buildAlertConditionStruct(d *schema.ResourceData) *newrelic.AlertCondition 
 		}
 	}
 
-	return &condition
+	return &condition, nil
 }
 
 func readAlertConditionStruct(condition *newrelic.AlertCondition, d *schema.ResourceData) error {
@@ -318,16 +312,19 @@ func readAlertConditionStruct(condition *newrelic.AlertCondition, d *schema.Reso
 
 func resourceNewRelicAlertConditionCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*newrelic.Client)
-	condition := buildAlertConditionStruct(d)
-
-	log.Printf("[INFO] Creating New Relic alert condition %s", condition.Name)
-
-	condition, err := client.CreateAlertCondition(*condition)
+	condition, err := buildAlertConditionStruct(d)
 	if err != nil {
 		return err
 	}
 
-	d.SetId(serializeIDs([]int{condition.PolicyID, condition.ID}))
+	log.Printf("[INFO] Creating New Relic alert condition %s", condition.Name)
+
+	condition_client, err_client := client.CreateAlertCondition(*condition)
+	if err_client != nil {
+		return err_client
+	}
+
+	d.SetId(serializeIDs([]int{condition_client.PolicyID, condition_client.ID}))
 
 	return nil
 }
@@ -360,7 +357,10 @@ func resourceNewRelicAlertConditionRead(d *schema.ResourceData, meta interface{}
 
 func resourceNewRelicAlertConditionUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*newrelic.Client)
-	condition := buildAlertConditionStruct(d)
+	condition, err := buildAlertConditionStruct(d)
+	if err != nil {
+		return err
+	}
 
 	ids, err := parseIDs(d.Id(), 2)
 	if err != nil {

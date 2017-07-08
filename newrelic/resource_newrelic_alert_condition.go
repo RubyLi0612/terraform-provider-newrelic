@@ -5,9 +5,9 @@ import (
 	"log"
 	"strconv"
 
-	newrelic "github.com/paultyng/go-newrelic/api"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
+	newrelic "github.com/paultyng/go-newrelic/api"
 )
 
 var alertConditionTypes = map[string][]string{
@@ -80,7 +80,6 @@ func resourceNewRelicAlertCondition() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
 		Schema: map[string]*schema.Schema{
 			"policy_id": {
 				Type:     schema.TypeInt,
@@ -99,12 +98,12 @@ func resourceNewRelicAlertCondition() *schema.Resource {
 			"entities": {
 				Type:     schema.TypeList,
 				Elem:     &schema.Schema{Type: schema.TypeInt},
-				Optional: true, // change this to optional for NRQL
+				Optional: true,
 				MinItems: 1,
 			},
 			"metric": {
 				Type:     schema.TypeString,
-				Optional: true, // change this to optional for NRQL, one of metric and nrql must be set
+				Optional: true,
 				//TODO: ValidateFunc from map
 			},
 			"runbook_url": {
@@ -151,8 +150,6 @@ func resourceNewRelicAlertCondition() *schema.Resource {
 				Required: true,
 				MinItems: 1,
 			},
-			// single_value: condition is evaluated based on each query's returned value
-			// sum: condition is evaluated based on the sum of each query's returned values over the specified duration
 			"value_function": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -194,11 +191,9 @@ func buildAlertConditionStruct(d *schema.ResourceData) (*newrelic.AlertCondition
 	}
 
 	condition := newrelic.AlertCondition{
-		Type:    d.Get("type").(string),
-		Name:    d.Get("name").(string),
-		Enabled: true,
-		//Entities: entities,
-		//Metric:   d.Get("metric").(string),
+		Type:     d.Get("type").(string),
+		Name:     d.Get("name").(string),
+		Enabled:  true,
 		Terms:    terms,
 		PolicyID: d.Get("policy_id").(int),
 		Scope:    d.Get("condition_scope").(string),
